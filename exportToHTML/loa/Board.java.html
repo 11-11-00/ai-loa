@@ -1,0 +1,457 @@
+<html>
+<head>
+<title>Board.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #629755; font-style: italic;}
+.s4 { color: #629755; font-weight: bold; font-style: italic;}
+.s5 { color: #6897bb;}
+.s6 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Board.java</font>
+</center></td></tr></table>
+<pre><span class="s0">/* Skeleton Copyright (C) 2015, 2020 Paul N. Hilfinger and the Regents of the 
+ * University of California.  All rights reserved. */</span>
+<span class="s2">package </span><span class="s1">loa</span><span class="s2">;</span>
+
+<span class="s2">import </span><span class="s1">com.sun.xml.internal.xsom.impl.scd.Iterators</span><span class="s2">;</span>
+<span class="s2">import </span><span class="s1">net.sf.saxon.functions.Empty</span><span class="s2">;</span>
+
+<span class="s2">import </span><span class="s1">java.util.ArrayList</span><span class="s2">;</span>
+<span class="s2">import </span><span class="s1">java.util.Arrays</span><span class="s2">;</span>
+<span class="s2">import </span><span class="s1">java.util.Collections</span><span class="s2">;</span>
+<span class="s2">import </span><span class="s1">java.util.Formatter</span><span class="s2">;</span>
+<span class="s2">import </span><span class="s1">java.util.List</span><span class="s2">;</span>
+
+<span class="s2">import </span><span class="s1">java.util.regex.Pattern</span><span class="s2">;</span>
+
+<span class="s2">import static </span><span class="s1">loa.Piece.*</span><span class="s2">;</span>
+<span class="s2">import static </span><span class="s1">loa.Square.*</span><span class="s2">;</span>
+
+<span class="s3">/** Represents the state of a game of Lines of Action.</span>
+ <span class="s3">*  </span><span class="s4">@author </span><span class="s3">Nathan Zhang</span>
+ <span class="s3">*/</span>
+<span class="s2">class </span><span class="s1">Board {</span>
+
+    <span class="s3">/** Default number of moves for each side that results in a draw. */</span>
+    <span class="s2">static final int </span><span class="s1">DEFAULT_MOVE_LIMIT = </span><span class="s5">60</span><span class="s2">;</span>
+
+    <span class="s3">/** Pattern describing a valid square designator (cr). */</span>
+    <span class="s2">static final </span><span class="s1">Pattern ROW_COL = Pattern.compile(</span><span class="s6">&quot;^[a-h][1-8]$&quot;</span><span class="s1">)</span><span class="s2">;</span>
+
+    <span class="s3">/** A Board whose initial contents are taken from INITIALCONTENTS</span>
+     <span class="s3">*  and in which the player playing TURN is to move. The resulting</span>
+     <span class="s3">*  Board has</span>
+     <span class="s3">*        get(col, row) == INITIALCONTENTS[row][col]</span>
+     <span class="s3">*  Assumes that PLAYER is not null and INITIALCONTENTS is 8x8.</span>
+     <span class="s3">*</span>
+     <span class="s3">*  CAUTION: The natural written notation for arrays initializers puts</span>
+     <span class="s3">*  the BOTTOM row of INITIALCONTENTS at the top.</span>
+     <span class="s3">*/</span>
+    <span class="s1">Board(Piece[][] initialContents</span><span class="s2">, </span><span class="s1">Piece turn) {</span>
+        <span class="s1">initialize(initialContents</span><span class="s2">, </span><span class="s1">turn)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** A new board in the standard initial position. */</span>
+    <span class="s1">Board() {</span>
+        <span class="s2">this</span><span class="s1">(INITIAL_PIECES</span><span class="s2">, </span><span class="s1">BP)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** A Board whose initial contents and state are copied from</span>
+     <span class="s3">*  BOARD. */</span>
+    <span class="s1">Board(Board board) {</span>
+        <span class="s2">this</span><span class="s1">()</span><span class="s2">;</span>
+        <span class="s1">copyFrom(board)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set my state to CONTENTS with SIDE to move. */</span>
+    <span class="s2">void </span><span class="s1">initialize(Piece[][] contents</span><span class="s2">, </span><span class="s1">Piece side) {</span>
+        <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">i = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i &lt; contents.length</span><span class="s2">; </span><span class="s1">i++ ){</span>
+            <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">j = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">j &lt; contents[</span><span class="s5">0</span><span class="s1">].length</span><span class="s2">;</span><span class="s1">j++){</span>
+               <span class="s2">int </span><span class="s1">index = (i &lt;&lt; </span><span class="s5">3</span><span class="s1">) + j</span><span class="s2">;</span>
+               <span class="s1">_board[index] = contents[i][j]</span><span class="s2">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s1">_turn = side</span><span class="s2">;</span>
+        <span class="s1">_moveLimit = DEFAULT_MOVE_LIMIT</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set me to the initial configuration. */</span>
+    <span class="s2">void </span><span class="s1">clear() {</span>
+        <span class="s1">initialize(INITIAL_PIECES</span><span class="s2">, </span><span class="s1">BP)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set my state to a copy of BOARD. */</span>
+    <span class="s2">void </span><span class="s1">copyFrom(Board board) {</span>
+        <span class="s2">if </span><span class="s1">(board == </span><span class="s2">this</span><span class="s1">) {</span>
+            <span class="s2">return;</span>
+        <span class="s1">}</span>
+        <span class="s2">else</span><span class="s1">{</span>
+            <span class="s1">Piece[] b = board._board</span><span class="s2">;</span>
+            <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">i = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i &lt; b.length</span><span class="s2">; </span><span class="s1">i++ ){</span>
+               <span class="s2">this</span><span class="s1">._board[i] = b[i]</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s2">this</span><span class="s1">._turn = board.turn()</span><span class="s2">;</span>
+            <span class="s2">this</span><span class="s1">._moveLimit = board._moveLimit</span><span class="s2">;</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return the contents of the square at SQ. */</span>
+    <span class="s1">Piece get(Square sq) {</span>
+        <span class="s2">return </span><span class="s1">_board[sq.index()]</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set the square at SQ to V and set the side that is to move next</span>
+     <span class="s3">*  to NEXT, if NEXT is not null. */</span>
+    <span class="s2">void </span><span class="s1">set(Square sq</span><span class="s2">, </span><span class="s1">Piece v</span><span class="s2">, </span><span class="s1">Piece next) {</span>
+        <span class="s2">this</span><span class="s1">._turn = next</span><span class="s2">;</span>
+        <span class="s1">_board[sq.index()] = v</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set the square at SQ to V, without modifying the side that</span>
+     <span class="s3">*  moves next. */</span>
+    <span class="s2">void </span><span class="s1">set(Square sq</span><span class="s2">, </span><span class="s1">Piece v) {</span>
+        <span class="s1">set(sq</span><span class="s2">, </span><span class="s1">v</span><span class="s2">, null</span><span class="s1">)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set limit on number of moves (before tie results) to LIMIT. */</span>
+    <span class="s2">void </span><span class="s1">setMoveLimit(</span><span class="s2">int </span><span class="s1">limit) {</span>
+        <span class="s1">_moveLimit = limit</span><span class="s2">;</span>
+        <span class="s1">_winnerKnown = </span><span class="s2">false;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Assuming isLegal(MOVE), make MOVE. Assumes MOVE.isCapture()</span>
+     <span class="s3">*  is false. */</span>
+    <span class="s2">void </span><span class="s1">makeMove(Move move) {</span>
+        <span class="s2">assert </span><span class="s1">isLegal(move)</span><span class="s2">;</span>
+        <span class="s1">_board[move.getFrom().index()] = EMP</span><span class="s2">;</span>
+        <span class="s1">set(move.getTo()</span><span class="s2">, </span><span class="s1">_turn</span><span class="s2">, </span><span class="s1">_turn.opposite())</span><span class="s2">;</span>
+        <span class="s1">_moves.add(</span><span class="s5">0</span><span class="s2">,</span><span class="s1">move)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Retract (unmake) one move, returning to the state immediately before</span>
+     <span class="s3">*  that move.  Requires that movesMade () &gt; 0. */</span>
+    <span class="s2">void </span><span class="s1">retract() {</span>
+        <span class="s2">assert </span><span class="s1">movesMade() &gt; </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s1">Move lastmove = _moves.get(</span><span class="s5">0</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s1">_board[lastmove.getTo().index()] = EMP</span><span class="s2">;</span>
+        <span class="s1">_board[lastmove.getFrom().index()] = _turn</span><span class="s2">;</span>
+        <span class="s1">_moves.remove(</span><span class="s5">0</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s1">_turn = _turn.opposite()</span><span class="s2">;</span>
+
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return the Piece representing who is next to move. */</span>
+    <span class="s1">Piece turn() {</span>
+        <span class="s2">return </span><span class="s1">_turn</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return true iff FROM - TO is a legal move for the player currently on</span>
+     <span class="s3">*  move. */</span>
+    <span class="s2">boolean </span><span class="s1">isLegal(Square from</span><span class="s2">, </span><span class="s1">Square to) {</span>
+        <span class="s2">return </span><span class="s1">from.isValidMove(to)</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">int </span><span class="s1">movesMade() {</span>
+        <span class="s2">return </span><span class="s1">_moves.size()</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+
+    <span class="s3">/** Return true iff MOVE is legal for the player currently on move.</span>
+     <span class="s3">*  The isCapture() property is ignored. */</span>
+    <span class="s2">boolean </span><span class="s1">isLegal(Move move) {</span>
+        <span class="s1">Square from = move.getFrom()</span><span class="s2">;</span>
+        <span class="s1">Square to = move.getTo()</span><span class="s2">;</span>
+        <span class="s2">if </span><span class="s1">(!from.isValidMove(to)){</span>
+            <span class="s2">return false;</span>
+        <span class="s1">}</span>
+        <span class="s2">int </span><span class="s1">dir = from.direction(to)</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">dis = from.distance(to)</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">x = from.row()</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">y = from.col()</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">a  = to.row()</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">b = to.col()</span><span class="s2">;</span>
+        <span class="s1">ArrayList&lt;Piece&gt; target</span><span class="s2">;</span>
+        <span class="s2">if </span><span class="s1">(dir == </span><span class="s5">0 </span><span class="s1">| dir ==</span><span class="s5">4</span><span class="s1">){</span>
+            <span class="s1">target = vert(x</span><span class="s2">,</span><span class="s1">y)</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">else if </span><span class="s1">(dir == </span><span class="s5">2 </span><span class="s1">| dir ==</span><span class="s5">6</span><span class="s1">){</span>
+            <span class="s1">target = horiz(x</span><span class="s2">, </span><span class="s1">y)</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">else if </span><span class="s1">(dir == </span><span class="s5">1 </span><span class="s1">| dir == </span><span class="s5">5</span><span class="s1">) {</span>
+            <span class="s1">target = positivediag(x</span><span class="s2">,</span><span class="s1">y)</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">else</span><span class="s1">{</span>
+            <span class="s1">target = negetivediag(x</span><span class="s2">,</span><span class="s1">y)</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">boolean </span><span class="s1">discheck = target.size() == dis</span><span class="s2">;</span>
+        <span class="s2">boolean </span><span class="s1">inbetween = </span><span class="s2">this</span><span class="s1">.indir(x</span><span class="s2">,</span><span class="s1">y</span><span class="s2">,</span><span class="s1">a</span><span class="s2">,</span><span class="s1">b</span><span class="s2">,</span><span class="s1">dir)</span><span class="s2">;</span>
+        <span class="s2">if </span><span class="s1">(_board[to.index()].equals(_turn)){</span>
+            <span class="s2">return false;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">discheck &amp; inbetween</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s1">ArrayList&lt;Piece&gt; positivediag(</span><span class="s2">int </span><span class="s1">x</span><span class="s2">, int </span><span class="s1">y){</span>
+        <span class="s1">ArrayList&lt;Piece&gt; b = </span><span class="s2">new </span><span class="s1">ArrayList&lt;Piece&gt;()</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">n = </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s2">while </span><span class="s1">(x &gt; </span><span class="s5">0 </span><span class="s1">| y &gt; </span><span class="s5">0</span><span class="s1">){</span>
+            <span class="s1">x = x-</span><span class="s5">1</span><span class="s2">;</span>
+            <span class="s1">y = y-</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">while </span><span class="s1">(x &lt; </span><span class="s5">8 </span><span class="s1">| y &lt; </span><span class="s5">8</span><span class="s1">){</span>
+            <span class="s2">if </span><span class="s1">(!_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y].equals(EMP)){</span>
+                <span class="s1">b.add(_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y])</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s1">x = x-</span><span class="s5">1</span><span class="s2">;</span>
+            <span class="s1">y = y-</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">b</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s1">@Override</span>
+    <span class="s2">public int </span><span class="s1">hashCode() {</span>
+        <span class="s2">return </span><span class="s1">Arrays.deepHashCode(_board) * </span><span class="s5">2 </span><span class="s1">+ _turn.hashCode()</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s1">ArrayList&lt;Piece&gt; negetivediag(</span><span class="s2">int </span><span class="s1">x</span><span class="s2">, int </span><span class="s1">y){</span>
+        <span class="s1">ArrayList &lt;Piece&gt; b = </span><span class="s2">new </span><span class="s1">ArrayList&lt;Piece&gt;()</span><span class="s2">;</span>
+        <span class="s2">while </span><span class="s1">(x &gt; </span><span class="s5">0 </span><span class="s1">| y &lt; </span><span class="s5">8</span><span class="s1">){</span>
+            <span class="s1">x = x-</span><span class="s5">1</span><span class="s2">;</span>
+            <span class="s1">y = y+</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">while </span><span class="s1">(x &lt; </span><span class="s5">8 </span><span class="s1">| y &gt; </span><span class="s5">0</span><span class="s1">){</span>
+            <span class="s2">if </span><span class="s1">(!_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y].equals(EMP)){</span>
+                <span class="s1">b.add(_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y])</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s1">x = x+</span><span class="s5">1</span><span class="s2">;</span>
+            <span class="s1">y = y-</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">b</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s1">ArrayList&lt;Piece&gt; horiz(</span><span class="s2">int </span><span class="s1">x</span><span class="s2">, int </span><span class="s1">y) {</span>
+        <span class="s1">ArrayList&lt;Piece&gt; b = </span><span class="s2">new </span><span class="s1">ArrayList&lt;Piece&gt;()</span><span class="s2">;</span>
+        <span class="s2">while </span><span class="s1">(y &gt;</span><span class="s5">0</span><span class="s1">) {</span>
+            <span class="s1">y = y-</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">while </span><span class="s1">(y &lt; </span><span class="s5">8 </span><span class="s1">){</span>
+            <span class="s2">if </span><span class="s1">(!_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y].equals(EMP)){</span>
+                <span class="s1">b.add(_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y])</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s1">y = y+</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">b</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s1">ArrayList &lt;Piece&gt; vert(</span><span class="s2">int </span><span class="s1">x</span><span class="s2">, int </span><span class="s1">y){</span>
+        <span class="s1">ArrayList&lt;Piece&gt; b = </span><span class="s2">new </span><span class="s1">ArrayList&lt;Piece&gt;()</span><span class="s2">;</span>
+        <span class="s2">while </span><span class="s1">(x &gt;</span><span class="s5">0</span><span class="s1">){</span>
+            <span class="s1">x = x-</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">while </span><span class="s1">(x &lt; </span><span class="s5">8 </span><span class="s1">){</span>
+            <span class="s2">if </span><span class="s1">(!_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y].equals(EMP)){</span>
+                <span class="s1">b.add(_board[x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y])</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s1">x = x+</span><span class="s5">1</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">b</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s2">boolean </span><span class="s1">indir (</span><span class="s2">int </span><span class="s1">x</span><span class="s2">, int </span><span class="s1">y</span><span class="s2">, int </span><span class="s1">a</span><span class="s2">, int </span><span class="s1">b</span><span class="s2">, int </span><span class="s1">dir){</span>
+        <span class="s2">int</span><span class="s1">[] darr = Square.getDir()[dir]</span><span class="s2">;</span>
+        <span class="s2">while </span><span class="s1">(x != a){</span>
+            <span class="s2">if </span><span class="s1">(_board[(x&lt;&lt;</span><span class="s5">3</span><span class="s1">+y)].equals(_turn.opposite())){</span>
+                <span class="s2">return false;</span>
+            <span class="s1">}</span>
+            <span class="s1">x = x + darr[</span><span class="s5">0</span><span class="s1">]</span><span class="s2">;</span>
+            <span class="s1">y = y+ darr[</span><span class="s5">1</span><span class="s1">]</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s2">return true;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return true if a move from FROM to TO is blocked by an opposing</span>
+     <span class="s3">*  piece or by a friendly piece on the target square. */</span>
+    <span class="s2">private boolean </span><span class="s1">blocked(Square from</span><span class="s2">, </span><span class="s1">Square to) {</span>
+        <span class="s2">if </span><span class="s1">(_board[to.index()] == _turn){</span>
+            <span class="s2">return true;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">!(indir(from.row()</span><span class="s2">,</span><span class="s1">from.col()</span><span class="s2">,</span>
+                <span class="s1">to.row()</span><span class="s2">,</span><span class="s1">to.col()</span><span class="s2">,</span><span class="s1">from.direction(to)))</span><span class="s2">;</span>
+
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return a sequence of all legal moves from this position. */</span>
+    <span class="s1">List&lt;Move&gt; legalMoves() {</span>
+        <span class="s1">ArrayList&lt;Move&gt; m = </span><span class="s2">new </span><span class="s1">ArrayList&lt;Move&gt;()</span><span class="s2">;</span>
+        <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">i = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i &lt; _board.length</span><span class="s2">; </span><span class="s1">i++){</span>
+            <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">j = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">j &lt; _board.length</span><span class="s2">; </span><span class="s1">j++){</span>
+                <span class="s2">if </span><span class="s1">(i !=j){</span>
+                    <span class="s2">int </span><span class="s1">frx = i/</span><span class="s5">8</span><span class="s2">;</span>
+                    <span class="s2">int </span><span class="s1">fry = i &amp; </span><span class="s5">0b111</span><span class="s2">;</span>
+                    <span class="s2">int </span><span class="s1">tox = j/</span><span class="s5">8</span><span class="s2">;</span>
+                    <span class="s2">int </span><span class="s1">toy = j &amp;</span><span class="s5">0b111</span><span class="s2">;</span>
+                    <span class="s1">Square from = Square.sq(frx</span><span class="s2">, </span><span class="s1">fry)</span><span class="s2">;</span>
+                    <span class="s1">Square to = Square.sq(tox</span><span class="s2">, </span><span class="s1">toy)</span><span class="s2">;</span>
+                    <span class="s2">if </span><span class="s1">(</span><span class="s2">this</span><span class="s1">.isLegal(from</span><span class="s2">, </span><span class="s1">to)){</span>
+                        <span class="s1">m.add(Move.mv(from</span><span class="s2">,</span><span class="s1">to))</span><span class="s2">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">m</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return true iff the game is over (either player has all his</span>
+     <span class="s3">*  pieces continguous or there is a tie). */</span>
+    <span class="s2">boolean </span><span class="s1">gameOver() {</span>
+        <span class="s2">return </span><span class="s1">winner() != </span><span class="s2">null;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return true iff SIDE's pieces are continguous. */</span>
+    <span class="s2">boolean </span><span class="s1">piecesContiguous(Piece side) {</span>
+        <span class="s2">return </span><span class="s1">getRegionSizes(side).size() == </span><span class="s5">1</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return the winning side, if any.  If the game is not over, result is</span>
+     <span class="s3">*  null.  If the game has ended in a tie, returns EMP. */</span>
+    <span class="s1">Piece winner() {</span>
+        <span class="s2">if </span><span class="s1">(!_winnerKnown) {</span>
+            <span class="s2">if </span><span class="s1">(_moves.size() == _moveLimit){</span>
+                <span class="s1">_winner = EMP</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s2">else if </span><span class="s1">(piecesContiguous(WP) &amp; piecesContiguous(BP)){</span>
+                <span class="s1">_winner = _turn.opposite()</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s2">else if </span><span class="s1">(piecesContiguous(WP)){</span>
+                <span class="s1">_winner = WP</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s2">else if </span><span class="s1">(piecesContiguous(BP)){</span>
+                <span class="s1">_winner = BP</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s2">else </span><span class="s1">{</span>
+                <span class="s1">_winner = </span><span class="s2">null;</span>
+            <span class="s1">}</span>
+            <span class="s1">_winnerKnown = </span><span class="s2">true;</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">_winner</span><span class="s2">;</span>
+    <span class="s1">}</span>
+            <span class="s3">/** Return the size of the as-yet unvisited cluster of squares</span>
+             <span class="s3">*  containing P at and adjacent to SQ.  VISITED indicates squares that</span>
+             <span class="s3">*  have already been processed or are in different clusters.  Update</span>
+             <span class="s3">*  VISITED to reflect squares counted. */</span>
+    <span class="s2">private int </span><span class="s1">numContig(Square sq</span><span class="s2">, boolean</span><span class="s1">[][] visited</span><span class="s2">, </span><span class="s1">Piece p) {</span>
+        <span class="s2">int </span><span class="s1">n = </span><span class="s5">0</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">x = sq.row()</span><span class="s2">;</span>
+        <span class="s2">int </span><span class="s1">y = sq.col()</span><span class="s2">;</span>
+        <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">i = x-</span><span class="s5">1 </span><span class="s2">; </span><span class="s1">i &lt; x+</span><span class="s5">2</span><span class="s2">; </span><span class="s1">x++){</span>
+            <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">j = y-</span><span class="s5">1</span><span class="s2">; </span><span class="s1">j &lt; y+</span><span class="s5">2</span><span class="s2">;</span><span class="s1">j++){</span>
+                <span class="s2">if </span><span class="s1">(visited[i][j] == </span><span class="s2">false </span><span class="s1">&amp; _board[(x&lt;&lt;</span><span class="s5">3</span><span class="s1">)+y].equals(p)){</span>
+                    <span class="s1">n++</span><span class="s2">;</span>
+                    <span class="s1">visited[i][j] = </span><span class="s2">true;</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s2">return </span><span class="s1">n</span><span class="s2">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Set the values of _whiteRegionSizes and _blackRegionSizes. */</span>
+    <span class="s2">private void </span><span class="s1">computeRegions() {</span>
+        <span class="s2">if </span><span class="s1">(_subsetsInitialized) {</span>
+            <span class="s2">return;</span>
+        <span class="s1">}</span>
+        <span class="s1">_whiteRegionSizes.clear()</span><span class="s2">;</span>
+        <span class="s1">_blackRegionSizes.clear()</span><span class="s2">;</span>
+        <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">i = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">i &lt; _board.length</span><span class="s2">; </span><span class="s1">i++){</span>
+            <span class="s2">int </span><span class="s1">row = i/</span><span class="s5">8</span><span class="s2">;</span>
+            <span class="s2">int </span><span class="s1">col = i &amp; </span><span class="s5">0b111</span><span class="s2">;</span>
+            <span class="s1">Square s = sq(col</span><span class="s2">, </span><span class="s1">row)</span><span class="s2">;</span>
+            <span class="s1">Piece p = _board[i]</span><span class="s2">;</span>
+            <span class="s2">if </span><span class="s1">(p.equals(WP)) {</span>
+                <span class="s2">int </span><span class="s1">count = </span><span class="s2">this</span><span class="s1">.numContig(s</span><span class="s2">, </span><span class="s1">visited</span><span class="s2">, </span><span class="s1">p)</span><span class="s2">;</span>
+                <span class="s2">if </span><span class="s1">(count &gt; </span><span class="s5">0</span><span class="s1">) {</span>
+                    <span class="s1">_whiteRegionSizes.add(count)</span><span class="s2">;</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+            <span class="s2">if </span><span class="s1">(p.equals(BP)) {</span>
+                <span class="s2">int </span><span class="s1">count = </span><span class="s2">this</span><span class="s1">.numContig(s</span><span class="s2">, </span><span class="s1">visited</span><span class="s2">, </span><span class="s1">p)</span><span class="s2">;</span>
+                <span class="s2">if </span><span class="s1">(count &gt; </span><span class="s5">0</span><span class="s1">) {</span>
+                    <span class="s1">_blackRegionSizes.add(count)</span><span class="s2">;</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s1">Collections.sort(_whiteRegionSizes</span><span class="s2">, </span><span class="s1">Collections.reverseOrder())</span><span class="s2">;</span>
+        <span class="s1">Collections.sort(_blackRegionSizes</span><span class="s2">, </span><span class="s1">Collections.reverseOrder())</span><span class="s2">;</span>
+        <span class="s1">_subsetsInitialized = </span><span class="s2">true;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">/** Return the sizes of all the regions in the current union-find</span>
+     <span class="s3">*  structure for side S. */</span>
+    <span class="s1">List&lt;Integer&gt; getRegionSizes(Piece s) {</span>
+        <span class="s1">computeRegions()</span><span class="s2">;</span>
+        <span class="s2">if </span><span class="s1">(s == WP) {</span>
+            <span class="s2">return </span><span class="s1">_whiteRegionSizes</span><span class="s2">;</span>
+        <span class="s1">} </span><span class="s2">else </span><span class="s1">{</span>
+            <span class="s2">return </span><span class="s1">_blackRegionSizes</span><span class="s2">;</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+    <span class="s1">@Override</span>
+    <span class="s2">public </span><span class="s1">String toString() {</span>
+        <span class="s1">Formatter out = </span><span class="s2">new </span><span class="s1">Formatter()</span><span class="s2">;</span>
+        <span class="s1">out.format(</span><span class="s6">&quot;===%n&quot;</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">r = BOARD_SIZE - </span><span class="s5">1</span><span class="s2">; </span><span class="s1">r &gt;= </span><span class="s5">0</span><span class="s2">; </span><span class="s1">r -= </span><span class="s5">1</span><span class="s1">) {</span>
+            <span class="s1">out.format(</span><span class="s6">&quot;    &quot;</span><span class="s1">)</span><span class="s2">;</span>
+            <span class="s2">for </span><span class="s1">(</span><span class="s2">int </span><span class="s1">c = </span><span class="s5">0</span><span class="s2">; </span><span class="s1">c &lt; BOARD_SIZE</span><span class="s2">; </span><span class="s1">c += </span><span class="s5">1</span><span class="s1">) {</span>
+                <span class="s1">out.format(</span><span class="s6">&quot;%s &quot;</span><span class="s2">, </span><span class="s1">get(sq(c</span><span class="s2">, </span><span class="s1">r)).abbrev())</span><span class="s2">;</span>
+            <span class="s1">}</span>
+            <span class="s1">out.format(</span><span class="s6">&quot;%n&quot;</span><span class="s1">)</span><span class="s2">;</span>
+        <span class="s1">}</span>
+        <span class="s1">out.format(</span><span class="s6">&quot;Next move: %s%n===&quot;</span><span class="s2">, </span><span class="s1">turn().fullName())</span><span class="s2">;</span>
+        <span class="s2">return </span><span class="s1">out.toString()</span><span class="s2">;</span>
+    <span class="s1">}</span>
+    <span class="s3">/** The standard initial configuration for Lines of Action (bottom row</span>
+     <span class="s3">*  first). */</span>
+    <span class="s2">static final </span><span class="s1">Piece[][] INITIAL_PIECES = {</span>
+        <span class="s1">{ EMP</span><span class="s2">, </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">EMP }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ WP</span><span class="s2">,  </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">EMP</span><span class="s2">, </span><span class="s1">WP  }</span><span class="s2">,</span>
+        <span class="s1">{ EMP</span><span class="s2">, </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">BP</span><span class="s2">,  </span><span class="s1">EMP }</span>
+    <span class="s1">}</span><span class="s2">;</span>
+    <span class="s2">boolean</span><span class="s1">[][] visited = </span><span class="s2">new boolean</span><span class="s1">[</span><span class="s5">8</span><span class="s1">][</span><span class="s5">8</span><span class="s1">]</span><span class="s2">;</span>
+    <span class="s2">static </span><span class="s1">Piece[][] custom_piece</span><span class="s2">;</span>
+
+    <span class="s2">private int </span><span class="s1">start = </span><span class="s5">0</span><span class="s2">;</span>
+    <span class="s2">private int </span><span class="s1">end = </span><span class="s5">0</span><span class="s2">;</span>
+
+    <span class="s3">/** Current contents of the board.  Square S is at _board[S.index()]. */</span>
+    <span class="s2">private final </span><span class="s1">Piece[] _board = </span><span class="s2">new </span><span class="s1">Piece[BOARD_SIZE  * BOARD_SIZE]</span><span class="s2">;</span>
+
+    <span class="s3">/** List of all unretracted moves on this board, in order. */</span>
+    <span class="s2">private final </span><span class="s1">ArrayList&lt;Move&gt; _moves = </span><span class="s2">new </span><span class="s1">ArrayList&lt;&gt;()</span><span class="s2">;</span>
+    <span class="s3">/** Current side on move. */</span>
+    <span class="s2">private </span><span class="s1">Piece _turn</span><span class="s2">;</span>
+    <span class="s3">/** Limit on number of moves before tie is declared.  */</span>
+    <span class="s2">private int </span><span class="s1">_moveLimit</span><span class="s2">;</span>
+    <span class="s3">/** True iff the value of _winner is known to be valid. */</span>
+    <span class="s2">private boolean </span><span class="s1">_winnerKnown</span><span class="s2">;</span>
+    <span class="s3">/** Cached value of the winner (BP, WP, EMP (for tie), or null (game still</span>
+     <span class="s3">*  in progress).  Use only if _winnerKnown. */</span>
+    <span class="s2">private </span><span class="s1">Piece _winner</span><span class="s2">;</span>
+
+    <span class="s3">/** True iff subsets computation is up-to-date. */</span>
+    <span class="s2">private boolean </span><span class="s1">_subsetsInitialized</span><span class="s2">;</span>
+
+    <span class="s3">/** List of the sizes of continguous clusters of pieces, by color. */</span>
+    <span class="s2">private final </span><span class="s1">ArrayList&lt;Integer&gt;</span>
+        <span class="s1">_whiteRegionSizes = </span><span class="s2">new </span><span class="s1">ArrayList&lt;&gt;()</span><span class="s2">,</span>
+        <span class="s1">_blackRegionSizes = </span><span class="s2">new </span><span class="s1">ArrayList&lt;&gt;()</span><span class="s2">;</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>
